@@ -12,6 +12,7 @@
 #include "lua/lualib.h"
 
 #include "global.h"
+#include "wm_include.h"
 
 /*
  * Lua Example:
@@ -59,11 +60,38 @@ static int wm_lib_version(lua_State *L)
 	return 1;
 }
 
+//init watchdog
+//params: time (us)
+//return none
+static int wm_watchdog_init(lua_State *L)
+{
+	if (lua_isinteger(L, 1)) {
+		u32 t = lua_tointeger(L, 1);
+		tls_watchdog_init(t);
+	}
+	return 0;
+}
+
+static int wm_watchdog_deinit(lua_State *L)
+{
+	tls_watchdog_deinit();
+	return 0;
+}
+
+static int wm_watchdog_feed(lua_State *L)
+{
+	tls_watchdog_clr();
+	return 0;
+}
+
 static const luaL_Reg syslib[] = {
 	{"restart", wm_app_restart}, // restart app
 	{"ticks", wm_get_time},
 	{"delay", wm_delay},
 	{"version", wm_lib_version},
+	{"watchdog_init", wm_watchdog_init},
+	{"watchdog_deinit", wm_watchdog_deinit},
+	{"watchdog_feed", wm_watchdog_feed},
 	{NULL, NULL},
 };
 

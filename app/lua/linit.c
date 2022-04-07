@@ -47,12 +47,15 @@ static const luaL_Reg loadedlibs[] = {
   {LUA_IOLIBNAME, luaopen_io},
   /*{LUA_OSLIBNAME, luaopen_os},*/
   {LUA_STRLIBNAME, luaopen_string},
-  {LUA_MATHLIBNAME, luaopen_math},
+  /*{LUA_MATHLIBNAME, luaopen_math},*/
   /*{LUA_UTF8LIBNAME, luaopen_utf8},*/
   {LUA_DBLIBNAME, luaopen_debug},
   {LUA_WMSYSLIBNAME, luaopen_wm_sys},
   {LUA_WMGPIOLIBNAME, luaopen_wm_gpid},
   {LUA_WMWIFILIBNAME, luaopen_wm_wifi},
+  {LUA_WMTIMELIBNAME, luaopen_wm_time}, 
+  {LUA_WMUARTLIBNAME, luaopen_wm_uart},
+  {LUA_WMRTCLIBNAME, luaopen_wm_rtc},
   {NULL, NULL}
 };
 

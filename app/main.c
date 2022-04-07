@@ -17,12 +17,13 @@
 #include "lua/lauxlib.h"
 #include "lua/lualib.h"
 
-#define LUA_PROGNAME					"lua"
-#define UART_NUM						TLS_UART_0
-#define LUA_TASK_PRIO	             	32
-#define LUA_TAST_STK_SIZE			10240
-#define LUA_MAXINPUT					512
+#define LUA_PROGNAME				"lua"
+#define UART_NUM					TLS_UART_0
+#define LUA_TASK_PRIO	            32
+#define LUA_TAST_STK_SIZE			5120
+#define LUA_MAXINPUT				512
 #define LUA_QUEUE_SIZE				32
+#define TEMP_BUFF_SIZE				1024
 
 #define LUA_PROMPT					"> "
 #define LUA_PROMPT2					">> "
@@ -32,7 +33,9 @@
 static OS_STK lua_task_stk[LUA_TAST_STK_SIZE];
 static const char *progname = LUA_PROGNAME;
 static u8 rx_buffer[TLS_UART_RX_BUF_SIZE] = {0};
+static u8 temp_buffer[TEMP_BUFF_SIZE] = {0};
 static tls_os_queue_t *lua_uart_q;
+static bool isUartDelay = false;
 
 /*
 ** Return the string to be used as a prompt by the interpreter. Leave
@@ -97,14 +100,21 @@ static void print_version (void)
 static s16 uart_rx_callback(u16 len, void *p)
 {
 	//printf("ready for data\n");
-	char temp[32] = {0};
-	int ret = tls_uart_read(UART_NUM, (u8 *)temp, len);  /* input */
+	memset(temp_buffer, 0, TEMP_BUFF_SIZE);
+	/*if (isUartDelay) {
+		int ret = tls_uart_read(UART_NUM, (u8 *)temp_buffer, len);
+		if (ret > 0) {
+			//printf("clear %d\n", ret);
+		}
+		return WM_SUCCESS;
+	}*/
+	int ret = tls_uart_read(UART_NUM, (u8 *)temp_buffer, len);  /* input */
 	if (ret > 0) {
-		if (strstr(temp, "\n") != NULL || strstr(temp, "\r")) { // end line, trigger event
-			strcat((char *)rx_buffer, (const char *)temp);
+		if (strstr(temp_buffer, "\n") != NULL || strstr(temp_buffer, "\r")) { // end line, trigger event
+			strcat((char *)rx_buffer, (const char *)temp_buffer);
 			tls_os_queue_send(lua_uart_q, (void *) LUA_MSG_UART_RECEIVE_DATA, 0);
 		} else {
-			if (temp[0] == 0x8) { // press Backspace button, delete one char
+			if (temp_buffer[0] == 0x8) { // press Backspace button, delete one char
 				int index = strlen((const char *)rx_buffer) - 1;
 				if (index >= 0) {
 					rx_buffer[index] = 0;
@@ -112,11 +122,11 @@ static s16 uart_rx_callback(u16 len, void *p)
 					tls_uart_write(UART_NUM, "\b", 1);
 				} // else no more character can be removed
 			} else {
-				if (strlen((const char *)rx_buffer) + strlen(temp) >= TLS_UART_RX_BUF_SIZE) { //overflow
+				if (strlen((const char *)rx_buffer) + strlen(temp_buffer) >= TLS_UART_RX_BUF_SIZE) { //overflow
 					printf("\n rx buffer overflow \n");
 				} else {
-					strcat((char *)rx_buffer, (const char *)temp); //append string
-					tls_uart_write(UART_NUM, (char *)temp, ret);  /* output */
+					strcat((char *)rx_buffer, (const char *)temp_buffer); //append string
+					tls_uart_write(UART_NUM, (char *)temp_buffer, ret);  /* output */
 				}
 			}
 		}
@@ -385,7 +395,23 @@ static void lua_task(void *sdata)
 		switch ((u32) msg) {
 		case LUA_MSG_UART_RECEIVE_DATA:
 		{
+			if (isUartDelay) {break;}
 			doREPL(L);
+			if (strstr(temp_buffer, "wmwifi.ap") != NULL || strstr(temp_buffer, "wmwifi.sta") != NULL) {
+				//printf("delay start\n");
+				isUartDelay = true;
+			}
+			/*if (isUartDelay) {
+				tls_os_time_delay(1600);
+				isUartDelay = false;
+				//printf("\ndelay over\n");
+				memset(temp_buffer, 0, TEMP_BUFF_SIZE); //clean uart cache
+				int readbytes = 0;
+				while ((readbytes = tls_uart_read(UART_NUM, (u8 *)temp_buffer, 128)) > 0) {
+					//printf("clear2 %d\n", readbytes);
+				}
+				//printf("\nuart buffer clear\n");
+			}*/
 		}
 			break;
 		default:
@@ -415,7 +441,7 @@ void UserMain(void)
 	printf(" | |___| |_| | (_| | |\\  | (_) | (_| |  __/\n");
 	printf(" \\_____/\\__,_|\\__,_\\_| \\_/\\___/ \\__,_|\\___|\n");
 	printf("\n----------------------------------------------\n\n");
-	
+
 	tls_os_status_t res = tls_os_queue_create(&lua_uart_q, LUA_QUEUE_SIZE);
 	if (res != TLS_OS_SUCCESS) {
 		printf("Create queue failed!\n");
@@ -425,9 +451,12 @@ void UserMain(void)
                            lua_task,
                            NULL,
                            (void *) lua_task_stk, 
-                           LUA_TAST_STK_SIZE, 
+                           LUA_TAST_STK_SIZE * sizeof(u32), 
                            LUA_TASK_PRIO, 0);
-						   
+
+#if 0
+	CreateDemoTask();
+#endif
 	//gpio_init();
 }
 

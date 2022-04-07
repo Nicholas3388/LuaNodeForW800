@@ -24,6 +24,8 @@
  * else 
 	 print("GPIO init failed")
  * end
+ * val=wmgpio.in(PORTB, 8) // read io
+ * print(val)
  */
 
 static int get_pin_index(char *port, int offset)
@@ -88,9 +90,26 @@ static int wm_gpio_out(lua_State *L)
 	return 0;
 }
 
-//read pin value
+//read pin value, params: port, pin
 static int wm_gpio_in(lua_State *L) 
 {
+	int pin_index = 0;
+	const char *port_name = luaL_optstring(L, 1, NULL);
+	//printf("lua set port: %s\n", port_name);
+	if (port_name == NULL) {
+		printf("Invalid port\n");
+		lua_pushinteger(L, 2);
+		return 1;
+	}
+	int offset = luaL_checkinteger(L, 2);
+	pin_index = get_pin_index(port_name, offset);
+	if (pin_index < 0) {
+		printf("Invalid pin index\n");
+		lua_pushinteger(L, 3);
+		return 1;
+	}
+	int ret = tls_gpio_read(pin_index);
+	lua_pushinteger(L, ret);
 	return 1;
 }
 

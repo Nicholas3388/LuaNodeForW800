@@ -2,10 +2,10 @@
 #define __WM_DEMO_H__
 
 #define DEMO_ON		1
-#define DEMO_OFF	0
+#define DEMO_OFF	1
 
 //demo console
-#define DEMO_CONSOLE				DEMO_OFF
+#define DEMO_CONSOLE				DEMO_ON
 
 //socket demo
 #define DEMO_STD_SOCKET_CLIENT	    (DEMO_OFF && DEMO_CONSOLE)

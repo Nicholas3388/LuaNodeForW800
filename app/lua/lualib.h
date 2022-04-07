@@ -50,8 +50,17 @@ LUAMOD_API int (luaopen_wm_sys) (lua_State *L);
 #define LUA_WMGPIOLIBNAME "wmgpio"
 LUAMOD_API int luaopen_wm_gpid (lua_State *L);
 
-#define LUA_WMWIFILIBNAME "wmgpio"
+#define LUA_WMWIFILIBNAME "wmwifi"
 LUAMOD_API int luaopen_wm_wifi (lua_State *L);
+
+#define LUA_WMTIMELIBNAME "wmtime"
+LUAMOD_API int luaopen_wm_time (lua_State *L);
+
+#define LUA_WMUARTLIBNAME "wmuart"
+LUAMOD_API int luaopen_wm_uart (lua_State *L);
+
+#define LUA_WMRTCLIBNAME "wmrtc"
+LUAMOD_API int luaopen_wm_rtc (lua_State *L);
 
 /* open all previous libraries */
 LUALIB_API void (luaL_openlibs) (lua_State *L);
